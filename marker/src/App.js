@@ -6,7 +6,10 @@ import {
 } from 'antd';
 import styles from './App.module.css';
 
-import { fetchImageById } from './api'; 
+import {
+  fetchImageById,
+  fetchInitState
+} from './api';
 
 const {
   Header, Content,
@@ -27,9 +30,20 @@ class App extends Component {
   }
 
   componentDidMount() {
-    this.setState({
-      imageUrl: "https://ss1.bdstatic.com/70cFvXSh_Q1YnxGkpoWK1HF6hhy/it/u=2241666278,698607827&fm=26&gp=0.jpg"
-    })
+    fetchInitState('http://localhost:1260/init')
+        .then(data => {
+          const lastId = data.data.lastId;
+          this.setState({
+            imageId: lastId,
+            totalImages: data.data.totalImages
+          })
+          return fetchImageById('http://localhost:1260/captcha', lastId)
+        })
+        .then(data => {
+          this.setState({
+            imageUrl: data.data
+          })
+        })
   }
 
   onLeftArrowClicked = () => {
@@ -38,7 +52,7 @@ class App extends Component {
       message.error("已经是第一张验证码了！")
       return;
     }
-    getImageById('http://127.0.0.1:1260/captcha', this.imageId).then(json => {
+    fetchImageById('http://127.0.0.1:1260/captcha', this.imageId).then(json => {
       this.setState({
         imageUrl: json.data,
         imageId: newImageId
@@ -52,7 +66,7 @@ class App extends Component {
       message.error("已经是最后一张验证码了！")
       return;
     } 
-    getImageById('http://127.0.0.1:1260/captcha', 0).then(json => {
+    fetchImageById('http://127.0.0.1:1260/captcha', 0).then(json => {
       this.setState({
         imageUrl: json.data,
         imageId: newImageId

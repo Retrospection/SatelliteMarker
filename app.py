@@ -115,7 +115,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     if args.mode == 'db':
-        initDatabase('127.0.0.1', 30901, '.')
+        initDatabase('106.14.126.240', 80, '.')
 
     elif args.mode == 'app':
-        app.run(host='0.0.0.0', port=1260)
+        app.run(host='0.0.0.0', port=1260, debug=True)

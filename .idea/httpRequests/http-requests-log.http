@@ -1,0 +1,32 @@
+GET http://localhost:1260/init
+Accept: */*
+Cache-Control: no-cache
+
+<> 2018-12-13T115823.200.json
+
+###
+
+GET http://localhost:1260/init
+Accept: */*
+Cache-Control: no-cache
+
+<> 2018-12-13T115805.200.json
+
+###
+
+GET http://localhost:1260/init
+Accept: */*
+Cache-Control: no-cache
+
+<> 2018-12-13T115733.500.html
+
+###
+
+GET http://localhost:1260/init
+Accept: */*
+Cache-Control: no-cache
+
+<> 2018-12-13T115655.200.json
+
+###
+
