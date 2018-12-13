@@ -1,20 +1,21 @@
 import React, { Component } from 'react';
 import {
   Layout, Row, Col,
-  Icon, Form, Button, Input,
+  Button, Input,
   message
 } from 'antd';
 import styles from './App.module.css';
 
 import {
-  fetchImageById,
-  fetchInitState
+  fetchNextImage,
+  fetchInitState,
+  submitMark
 } from './api';
 
 const {
   Header, Content,
 } = Layout;
-const FormItem = Form.Item;
+
 
 
 class App extends Component {
@@ -37,43 +38,17 @@ class App extends Component {
             imageId: lastId,
             totalImages: data.data.totalImages
           })
-          return fetchImageById('http://localhost:1260/captcha', lastId)
+          return fetchNextImage('http://localhost:1260/captcha')
         })
         .then(data => {
-          this.setState({
-            imageUrl: data.data
-          })
+          if (data.code === 0) {
+            this.setState({
+              imageUrl: data.data.imageUrl,
+              imageId: data.data.imageId
+            })
+          }
         })
   }
-
-  onLeftArrowClicked = () => {
-    let newImageId = this.state.imageId - 1;
-    if (newImageId < 0) {
-      message.error("已经是第一张验证码了！")
-      return;
-    }
-    fetchImageById('http://127.0.0.1:1260/captcha', this.imageId).then(json => {
-      this.setState({
-        imageUrl: json.data,
-        imageId: newImageId
-      })
-    })
-  }
-
-  onRightArrowClicked = () => {
-    let newImageId = this.state.imageId + 1;
-    if (newImageId >= this.state.totalImages) {
-      message.error("已经是最后一张验证码了！")
-      return;
-    } 
-    fetchImageById('http://127.0.0.1:1260/captcha', 0).then(json => {
-      this.setState({
-        imageUrl: json.data,
-        imageId: newImageId
-      })
-    })
-  }
-
 
   onInputChange = (e) => {
     this.setState({
@@ -82,7 +57,20 @@ class App extends Component {
   }
 
   onSubmitBtnClicked = (e) => {
-
+    submitMark('http://localhost:1260/mark', {
+      imageId: this.state.imageId,
+      markValue: this.state.inputValue
+    }).then(data => {
+      return fetchNextImage('http://localhost:1260/captcha')
+    }).then(data => {
+          if (data.code === 0) {
+            this.setState({
+              imageUrl: data.data.imageUrl,
+              imageId: data.data.imageId,
+              inputValue: "",
+            })
+          }
+        })
   }
 
   onResetBtnClicked = (e) => {
@@ -94,22 +82,16 @@ class App extends Component {
   render() {
     return (
       <Layout>
-        <Header className={styles.header}>新浪微博验证码标注工具</Header>
+        <Header className={styles.header}>新浪微博验证码标注工具 [ { this.state.imageId + 1 } / {this.state.totalImages} ]</Header>
         <Content style={{backgroundColor: "white"}}>
           <Row type="flex" align="middle">
-            <Col offset={9} span={1} style={{textAlign: "center"}}>
-              <Icon className={styles.arrow} type="left" onClick={this.onLeftArrowClicked}/>
-            </Col>
-            <Col span={4}>
+            <Col offset={10} span={4}>
               <img alt="验证码图片" src={this.state.imageUrl} className={styles.captcha} />
-            </Col>
-            <Col span={1} style={{textAlign: "center"}}>
-              <Icon className={styles.arrow} type="right" onClick={this.onRightArrowClicked}/>
             </Col>
           </Row>
           <div className={styles.form}>
             <div className={styles["form-items"]}>
-              <Input value={this.state.inputValue} onChange={this.onInputChange} placeholder="请输入图片中的文字"/>
+              <Input value={this.state.inputValue} onChange={this.onInputChange} placeholder="请输入图片中的文字" onPressEnter={this.onSubmitBtnClicked}/>
             </div>
             <div className={styles["form-items"]}>
               <Button className={styles.btn} type="primary" onClick={this.onSubmitBtnClicked}>提交</Button>

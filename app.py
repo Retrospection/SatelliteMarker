@@ -3,8 +3,7 @@
 from flask import (
     Flask, 
     request, 
-    jsonify,
-    send_file
+    jsonify
 )
 from flask_sqlalchemy import SQLAlchemy
 import argparse
@@ -12,6 +11,7 @@ from flask_cors import CORS
 
 
 import os
+import datetime as dt
 
 
 app = Flask(__name__)
@@ -52,8 +52,8 @@ def makeUrl(ipAddress, port, staticFolder, filename):
 
 def initDatabase(ipAddress, port, staticFolder):
     db.create_all()
-    images = os.listdir('./images')
-    urls = [makeUrl(ipAddress, port, staticFolder, image) for image in images]
+    with open('./data/image_list.txt') as f:
+        urls = [line.strip() for line in f]
     for idx, url in enumerate(urls):
         marker = Marker(id=idx, image_url=url, content=None, datetime=None, is_marked=False)
         db.session.add(marker)
@@ -62,40 +62,62 @@ def initDatabase(ipAddress, port, staticFolder):
 
 # -------------------------- route ----------------------------
 
-@app.route('/captcha/<int:id>', methods=['GET'])
-def get_next_image(id):
-    print(id)
-    if id >= len(image_list):
+@app.route('/captcha', methods=['GET'])
+def get_next_image():
+    markers = Marker.query.all()
+    unmarked_markers = list(filter(lambda r: not r.is_marked, markers))
+    if len(unmarked_markers) != 0:
+        min_unmarked = min(unmarked_markers, key=lambda r: r.id)
+        print('minId: ', min_unmarked.id)
         return jsonify({
-            'code': -1,
-            'msg': 'image not found',
-            'data': ''
-        })
-    return jsonify({
             'code': 0,
             'msg': 'ok',
-            'data': image_list[id]
+            'data': {
+                'imageUrl': image_list[min_unmarked.id],
+                'imageId': min_unmarked.id
+            }
         })
+    else:
+        return jsonify({
+            'code': -1,
+            'msg': 'no more Images',
+            'data': ""
+        })
+
 
 @app.route('/mark', methods=['POST'])
 def mark():
-    data = request.get_json()
-    imageId = data['imageId']
-    
-    pass
+    try:
+        data = request.get_json()
+        marker = Marker.query.filter_by(id=data['imageId']).first()
+        print(marker.id)
+        marker.content = data['markValue']
+        marker.datetime = int(dt.datetime.now().timestamp())
+        marker.is_marked = True
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        return jsonify({
+            'code': -1,
+            'msg': 'internal error'
+        })
+    return jsonify({
+            'code': 0,
+            'msg': 'ok'
+        })
 
 
 @app.route('/init', methods=['GET'])
 def init():
     markers = Marker.query.all()
-    markedMarkers = filter(lambda r: r.is_marked, markers)
-    if list(markedMarkers):
-        maxIdMarker = max(markedMarkers, key=lambda r: r.id)
+    marked_markers = list(filter(lambda r: r.is_marked, markers))
+    if len(marked_markers) != 0:
+        max_id_marker = max(marked_markers, key=lambda r: r.id)
         return jsonify({
             'code': 0,
             'msg': 'ok',
             'data': {
-                'lastId': maxIdMarker.id + 1,
+                'lastId': max_id_marker.id + 1,
                 'totalImages': len(markers)
             }
         })
@@ -108,6 +130,7 @@ def init():
                 'totalImages': len(markers)
             }
         })
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
