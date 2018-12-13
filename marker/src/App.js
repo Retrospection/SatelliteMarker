@@ -1,8 +1,7 @@
 import React, { Component } from 'react';
 import {
   Layout, Row, Col,
-  Button, Input,
-  message
+  Button, Input
 } from 'antd';
 import styles from './App.module.css';
 
@@ -31,14 +30,14 @@ class App extends Component {
   }
 
   componentDidMount() {
-    fetchInitState('http://localhost:1260/init')
+    fetchInitState('http://106.14.126.240:1260/init')
         .then(data => {
           const lastId = data.data.lastId;
           this.setState({
             imageId: lastId,
             totalImages: data.data.totalImages
           })
-          return fetchNextImage('http://localhost:1260/captcha')
+          return fetchNextImage('http://106.14.126.240:1260/captcha')
         })
         .then(data => {
           if (data.code === 0) {
@@ -57,11 +56,11 @@ class App extends Component {
   }
 
   onSubmitBtnClicked = (e) => {
-    submitMark('http://localhost:1260/mark', {
+    submitMark('http://106.14.126.240:1260/mark', {
       imageId: this.state.imageId,
       markValue: this.state.inputValue
     }).then(data => {
-      return fetchNextImage('http://localhost:1260/captcha')
+      return fetchNextImage('http://106.14.126.240:1260/captcha')
     }).then(data => {
           if (data.code === 0) {
             this.setState({
