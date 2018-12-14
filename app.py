@@ -31,7 +31,7 @@ class Marker(db.Model):
     image_url = db.Column(db.String(2048), unique=True)
     content = db.Column(db.String(1024))
     datetime = db.Column(db.Integer)
-    is_marked = db.Column(db.Boolean)
+    is_marked = db.Column(db.Integer)
 
 
 # ------------------------ helper functions ------------------------
@@ -133,12 +133,12 @@ def init():
 
 
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--mode', type=str)
-    # args = parser.parse_args()
-    #
-    # if args.mode == 'db':
-    #     initDatabase('106.14.126.240', 80, '.')
-    #
-    # elif args.mode == 'app':
-    app.run(host='0.0.0.0', port=1260, threaded=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--mode', type=str)
+    args = parser.parse_args()
+
+    if args.mode == 'db':
+        initDatabase('106.14.126.240', 80, '.')
+
+    elif args.mode == 'app':
+        app.run(host='0.0.0.0', port=1260, threaded=True)
