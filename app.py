@@ -10,7 +10,7 @@ import argparse
 from flask_cors import CORS
 
 
-import os
+import time
 import datetime as dt
 
 
@@ -60,21 +60,30 @@ def initDatabase(ipAddress, port, staticFolder):
     db.session.commit()
 
 
+def clearSuspended():
+    suspended_markers = Marker.query.filter(Marker.is_marked == 1).order_by(Marker.id, Marker.id.desc()).all()
+    for suspended_marker in suspended_markers:
+        now = dt.datetime.now().timestamp()
+        if now - int(suspended_marker.datetime) > 60 * 60:
+            suspended_marker.is_marked = 0
+    db.session.commit()
+
 # -------------------------- route ----------------------------
 
 @app.route('/captcha', methods=['GET'])
 def get_next_image():
-    markers = Marker.query.all()
-    unmarked_markers = list(filter(lambda r: not r.is_marked, markers))
-    if len(unmarked_markers) != 0:
-        min_unmarked = min(unmarked_markers, key=lambda r: r.id)
-        print('minId: ', min_unmarked.id)
+    clearSuspended()
+    marker = Marker.query.filter(Marker.is_marked == 0).order_by(Marker.id, Marker.id.desc()).limit(1).all()[0]
+    if marker:
+        marker.is_marked = 1
+        marker.datetime = int(dt.datetime.now().timestamp())
+        db.session.commit()
         return jsonify({
             'code': 0,
             'msg': 'ok',
             'data': {
-                'imageUrl': image_list[min_unmarked.id],
-                'imageId': min_unmarked.id
+                'imageUrl': image_list[marker.id],
+                'imageId': marker.id
             }
         })
     else:
@@ -87,13 +96,14 @@ def get_next_image():
 
 @app.route('/mark', methods=['POST'])
 def mark():
+
+
     try:
         data = request.get_json()
         marker = Marker.query.filter_by(id=data['imageId']).first()
         print(marker.id)
         marker.content = data['markValue']
-        marker.datetime = int(dt.datetime.now().timestamp())
-        marker.is_marked = True
+        marker.is_marked = 2
         db.session.commit()
     except Exception as e:
         print(e)
@@ -109,22 +119,23 @@ def mark():
 
 @app.route('/init', methods=['GET'])
 def init():
+    clearSuspended()
+    marker = Marker.query.filter(Marker.is_marked == 0).order_by(Marker.id, Marker.id.desc()).limit(1).all()[0]
     markers = Marker.query.all()
-    marked_markers = list(filter(lambda r: r.is_marked, markers))
-    if len(marked_markers) != 0:
-        max_id_marker = max(marked_markers, key=lambda r: r.id)
+    if marker:
         return jsonify({
             'code': 0,
             'msg': 'ok',
             'data': {
-                'lastId': max_id_marker.id + 1,
-                'totalImages': len(markers)
+                'lastId': marker.id,
+                'totalImages':len(markers)
             }
         })
-    else: 
+    else:
+
         return jsonify({
-            'code': 0,
-            'msg': 'ok',
+            'code': -1,
+            'msg': 'no more Images',
             'data': {
                 'lastId': 0,
                 'totalImages': len(markers)
@@ -133,12 +144,12 @@ def init():
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', type=str)
-    args = parser.parse_args()
-
-    if args.mode == 'db':
-        initDatabase('106.14.126.240', 80, '.')
-
-    elif args.mode == 'app':
-        app.run(host='0.0.0.0', port=1260, threaded=True)
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--mode', type=str)
+    # args = parser.parse_args()
+    #
+    # if args.mode == 'db':
+    #     initDatabase('106.14.126.240', 80, '.')
+    #
+    # elif args.mode == 'app':
+    app.run(host='0.0.0.0', port=1260)

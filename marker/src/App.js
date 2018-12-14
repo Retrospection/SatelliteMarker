@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import {
   Layout, Row, Col,
-  Button, Input
+  Button, Input, message
 } from 'antd';
 import styles from './App.module.css';
 
@@ -15,7 +15,7 @@ const {
   Header, Content,
 } = Layout;
 
-
+const HOST = 'http://localhost:1260'
 
 class App extends Component {
 
@@ -30,14 +30,14 @@ class App extends Component {
   }
 
   componentDidMount() {
-    fetchInitState('http://106.14.126.240:1260/init')
+    fetchInitState(`${HOST}/init`)
         .then(data => {
           const lastId = data.data.lastId;
           this.setState({
             imageId: lastId,
             totalImages: data.data.totalImages
           })
-          return fetchNextImage('http://106.14.126.240:1260/captcha')
+          return fetchNextImage(`${HOST}/captcha`)
         })
         .then(data => {
           if (data.code === 0) {
@@ -55,12 +55,15 @@ class App extends Component {
     })
   }
 
-  onSubmitBtnClicked = (e) => {
-    submitMark('http://106.14.126.240:1260/mark', {
+  onSubmitBtnClicked = () => {
+    if (!/^[a-zA-Z0-9]{5}$/g.test(this.state.inputValue.length)) {
+      message.error("请输入五个半角英文或数字字符！")
+    }
+    submitMark(`${HOST}/mark`, {
       imageId: this.state.imageId,
       markValue: this.state.inputValue
     }).then(data => {
-      return fetchNextImage('http://106.14.126.240:1260/captcha')
+      return fetchNextImage(`${HOST}/captcha`)
     }).then(data => {
           if (data.code === 0) {
             this.setState({
@@ -81,7 +84,7 @@ class App extends Component {
   render() {
     return (
       <Layout>
-        <Header className={styles.header}>新浪微博验证码标注工具 [ { this.state.imageId + 1 } / {this.state.totalImages} ]</Header>
+        <Header className={styles.header}>新浪微博验证码标注工具 [ 当前图片id: { this.state.imageId + 1 } / 总图片数：{this.state.totalImages} ]</Header>
         <Content style={{backgroundColor: "white"}}>
           <Row type="flex" align="middle">
             <Col offset={10} span={4}>
