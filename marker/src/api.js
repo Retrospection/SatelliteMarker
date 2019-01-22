@@ -1,13 +1,14 @@
 
-export function fetchImageById(url, id){
-    let requestUrl
-    if (url.endsWith('/')) {
-        requestUrl = `${url}${id}`
-    } else {
-        requestUrl = `${url}/${id}`
-    }
+export function fetchInitState(url) {
+    return fetch(url, {
+        method: 'get'
+    }).then(response => response.json())
+}
+
+export function fetchNextImage(url){
+
     //fetch请求
-    return fetch(requestUrl,{ 
+    return fetch(url,{
         method: 'get',
     }).then(response => response.json());
 }
@@ -19,13 +20,10 @@ export function submitMark(url, content) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            mark: content
+            imageId: content.imageId,
+            markValue: content.markValue
         })
     }).then(response => response.json())
 }
 
-export function fetchInitState(url) {
-    return fetch(url, {
-        method: 'get'
-    }).then(response => response.json())
-}
+
